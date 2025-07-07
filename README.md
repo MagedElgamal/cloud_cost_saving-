@@ -1,7 +1,3 @@
-Sure! Here's a cool, simple, and friendly README file you can add to your GitHub repo for this Ansible playbook:
-
----
-
 # GCP Unhealthy Load Balancer Checker & Slack Notifier
 
 👋 **Welcome!**

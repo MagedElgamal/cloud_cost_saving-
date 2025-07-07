@@ -1,48 +1,92 @@
+Sure! Here's a cool, simple, and friendly README file you can add to your GitHub repo for this Ansible playbook:
+
 ---
-- name: Check unhealthy load balancers and send to Slack
-  hosts: localhost
-  gather_facts: no
-  tasks:
-    - name: List global backend services
-      shell: >
-        gcloud compute backend-services list --global --format="value(name)"
-      register: backend_services
-      environment:
-        GOOGLE_APPLICATION_CREDENTIALS: "{{ gcp_terraform_sa }}"
 
-    - name: Check health status of each backend service
-      shell: |
-        backend_type=$(gcloud compute backend-services describe {{ item }} --global --format="value(backends[0].group)")
-        if [[ $backend_type == *"serverless"* ]]; then
-          echo "Skipping serverless backend: {{ item }}"
-        else
-          status=$(gcloud compute backend-services get-health {{ item }} --global --format="value(status.healthStatus[0].healthState)")
-          if [[ $? -ne 0 ]]; then
-            echo "Error checking {{ item }}"
-            exit 1
-          fi
-          if [[ $status != "HEALTHY" ]]; then
-            echo "| Global LB     | {{ item }}        | N/A          | $status |"
-          fi
-        fi
-      with_items: "{{ backend_services.stdout_lines }}"
-      register: health_statuses
-      failed_when: health_statuses.rc != 0
-      ignore_errors: true
-      environment:
-        GOOGLE_APPLICATION_CREDENTIALS: "{{ gcp_terraform_sa }}"
+# GCP Unhealthy Load Balancer Checker & Slack Notifier
 
-    - name: Send unhealthy backend services to Slack
-      slack:
-        token: "{{ slack_token }}"
-        msg: |
-          Unhealthy Load Balancers:
-          -------------------------------------------------------------------------
-          | Load Balancer | Backend Service | Region        | Status        |
-          -------------------------------------------------------------------------
-          {% for item in health_statuses.results %}
-          {% if item.stdout %}
-          {{ item.stdout }}
-          {% endif %}
-          {% endfor %}
-      when: health_statuses.results | selectattr('stdout') | list | length > 0
+👋 **Welcome!**
+This Ansible playbook helps you automatically check the health of your **Google Cloud Platform (GCP) global backend services (load balancers)** and sends a summary of any **unhealthy ones directly to your Slack channel**. This way, you catch issues early and can reduce unnecessary costs caused by unhealthy load balancers.
+
+---
+
+## Why use this playbook?
+
+* 🚦 **Automated health check:** No more manual checking of your load balancers.
+* 🛎️ **Slack notifications:** Get instant alerts in Slack if any backend services are unhealthy.
+* 💰 **Cost saver:** Quickly spot and fix unhealthy load balancers to avoid wasting GCP resources.
+* 😎 **Easy to use:** Just provide your GCP service account and Slack token — and you’re good to go!
+
+---
+
+## How it works
+
+1. Lists all global backend services (load balancers) in your GCP project.
+2. Checks the health status of each backend service.
+3. Skips serverless backends (since they behave differently).
+4. Collects all unhealthy load balancers.
+5. Sends a neat table of unhealthy services to a Slack channel using your Slack bot token.
+
+---
+
+## Prerequisites
+
+* Ansible installed on your local machine or automation server.
+* `gcloud` CLI installed and configured.
+* A GCP Service Account JSON file with permissions to read backend services.
+* Slack Bot Token with permission to post messages in your chosen channel.
+
+---
+
+## How to use
+
+1. Clone this repo or copy the playbook to your environment.
+
+2. Create a variables file or export environment variables:
+
+```yaml
+gcp_terraform_sa: /path/to/your/gcp-service-account.json
+slack_token: xoxb-your-slack-bot-token
+```
+
+3. Run the playbook:
+
+```bash
+ansible-playbook check-unhealthy-lbs.yml -e "gcp_terraform_sa=/path/to/sa.json slack_token=xoxb-your-token"
+```
+
+---
+
+## Example Slack message
+
+```
+Unhealthy Load Balancers:
+-------------------------------------------------------------------------
+| Load Balancer | Backend Service | Region        | Status        |
+-------------------------------------------------------------------------
+| Global LB    | my-backend-svc  | N/A           | UNHEALTHY    |
+| Global LB    | another-backend | N/A           | UNHEALTHY    |
+```
+
+---
+
+## Troubleshooting
+
+* Make sure your GCP Service Account JSON has **read permissions** on backend services.
+* Ensure your Slack token is valid and has **chat\:write** permission.
+* `gcloud` CLI commands should work manually on your machine with the provided service account.
+
+---
+
+## Contributing
+
+Feel free to open issues or submit pull requests if you want to improve this playbook!
+
+---
+
+## License
+
+MIT License © 2025 Maged Elgamal
+
+---
+
+If you want, I can help you generate the README in Markdown format for direct GitHub use!
